@@ -1,248 +1,269 @@
-# FactorFoundry
+<div align="center">
+  <img src="docs/assets/hero.png" alt="FactorFoundry — turn hypotheses into evidence, not stories" width="100%">
+</div>
 
-**Auditable multi-agent alpha factor research for A-share equities.**
+<h1 align="center">FactorFoundry</h1>
 
-FactorFoundry turns economically motivated hypotheses into reproducible,
-leakage-audited factor experiments. The design principle is deliberate:
+<p align="center">
+  <strong>The open-source research lab for alpha discovery.</strong><br>
+  Agents propose. Deterministic tools compute, audit, and decide.
+</p>
 
-> Language-model agents propose and critique. Deterministic tools compute, audit,
-> and decide whether a factor survives.
+<p align="center">
+  <a href="https://github.com/zdxslwywfccsqk/FactorFoundry/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/zdxslwywfccsqk/FactorFoundry/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/zdxslwywfccsqk/FactorFoundry/releases"><img alt="Release" src="https://img.shields.io/github/v/release/zdxslwywfccsqk/FactorFoundry?color=39f2c1"></a>
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-3776AB?logo=python&logoColor=white">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-39f2c1"></a>
+  <img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-5c97ff">
+</p>
 
-This repository is a research framework, not investment advice and not a live
-trading system.
+<p align="center">
+  <a href="#quickstart">Quickstart</a> ·
+  <a href="#why-factorfoundry">Why FactorFoundry</a> ·
+  <a href="#reference-run">Reference run</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="ROADMAP.md">Roadmap</a> ·
+  <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-## Status
+> [!IMPORTANT]
+> FactorFoundry is research infrastructure, not investment advice or a live
+> trading system. The reference run is a reproducible benchmark, not proof of a
+> deployable alpha.
 
-`v0.2` is the first agentic-runtime release candidate. It includes:
+## Why FactorFoundry
 
-- a deterministic offline research path that always works;
-- an optional Mini-Agent role runtime with scoped tools;
-- an append-only artifact blackboard and event ledger;
-- a train/validation/test split guard with explicit holdout release;
-- cost-aware backtests, FDR/DSR/PBO, leakage audit, and label-shuffle tests;
-- a greedy low-correlation portfolio builder;
-- a run report with a complete evidence chain.
+Most factor-mining demos optimize for a prettier equity curve. FactorFoundry is
+optimized for the probability that a result survives contact with reality.
 
-The legacy fixed-sequence pipeline remains available through
-`alpha_foundry.pipeline` for comparison, but new work should use
-`alpha_foundry.agentic`.
+> **The core bet:** language models are useful for search, but dangerous as the
+> source of numerical truth. Give them the first job. Take away the second.
 
-## Architecture
+The repository is built around a different contract from a conventional
+backtesting library:
+
+| Conventional factor demo | FactorFoundry |
+|---|---|
+| The model writes code, metrics, and conclusions | Agents submit typed artifacts; deterministic tools compute every number |
+| The test set is protected by convention | The test split is blocked by a runtime capability guard |
+| Failed trials disappear into notebooks | Rejections remain first-class evidence with lineage |
+| A high Sharpe is the end of the story | FDR, DSR, PBO, bootstrap intervals, and leakage audits are mandatory |
+| Free-form multi-agent chat | Six bounded roles with explicit tool allowlists |
+| One opaque pipeline | Append-only artifacts, SQLite ledger, JSONL event stream |
+
+This is the project for researchers and engineers who want agentic search without
+giving up reproducibility, negative evidence, or scientific skepticism.
+
+## One loop, six bounded roles
 
 ```text
-ResearchOrchestrator
-  ├── deterministic reference policy
-  └── Mini-Agent role runner
-        ├── Hypothesis Agent
-        ├── Feasibility Agent
-        ├── Factor Engineer
-        ├── Evaluator (deterministic service)
-        ├── Critic Agent
-        └── Portfolio Agent
-                │
-                ▼
-        Artifact Blackboard
-        SQLite + JSON + JSONL
-                │
-                ▼
-        Deterministic Tool Layer
-        data · DSL · backtest · statistics · text split guard
+Hypothesis → Feasibility → Factor Engineer → Cost-aware Evaluator
+      ↑                                                ↓
+      └──── research memory     Adversarial Critic ←───┘
+                                          ↓
+                                  Portfolio Agent
+                                          ↓
+                               locked holdout release
 ```
 
-Agents do not pass mutable Python objects or chat messages into the numerical
-core. They submit typed artifacts. Every artifact records its producer, parents,
-content hash, schema version, split, and payload. The orchestrator enforces legal
-state transitions and the split guard.
+| Role | Responsibility | Hard boundary |
+|---|---|---|
+| **Hypothesis** | Turn an economic mechanism into a testable card | Cannot run backtests |
+| **Feasibility** | Check fields, coverage, and implementability | Cannot inspect returns |
+| **Engineer** | Express the idea in the deterministic DSL | Cannot change the protocol |
+| **Evaluator** | Run train/validation, cost-aware evaluation | Cannot access test |
+| **Critic** | Inspect evidence and add vetoes | Cannot accept a factor that failed the gates |
+| **Portfolio** | Combine accepted, low-correlation factors | Cannot use holdout performance |
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and
-[`docs/AGENT_PROTOCOL.md`](docs/AGENT_PROTOCOL.md).
+Mini-Agent supplies the single-agent execution loop. FactorFoundry supplies the
+multi-agent state machine, artifact blackboard, split guard, and deterministic
+truth layer. See [`docs/AGENT_PROTOCOL.md`](docs/AGENT_PROTOCOL.md).
 
-## Quickstart: deterministic mode
+## Evidence by construction
 
-Required: Python 3.10+, and cached or downloadable A-share data.
+Every run produces a self-contained evidence bundle:
+
+- typed artifacts with producer, parents, content hash, schema version, split,
+  and payload;
+- an append-only event ledger for agent tasks, tool calls, failures, and split
+  access;
+- a manifest with config hash and data fingerprint;
+- explicit holdout release records;
+- both accepted and rejected candidates;
+- a human-readable report and machine-readable summary.
+
+The held-out test period is not a flag that a prompt politely avoids. It is a
+runtime capability. The default command cannot evaluate it.
+
+## Reference run
+
+The v0.2 deterministic runtime reproduces the original A-share research result:
+
+| Holdout net Sharpe | Holdout net annual return | Candidates | Critic accepted | Artifacts |
+|---:|---:|---:|---:|---:|
+| **0.7500** | **18.96%** | **73** | **2** | **374** |
+
+**We publish the evidence that weakens our own headline.** The same run showed a
+PBO of `0.51`, a Deflated Sharpe of `0.13`, an FDR q-value of `0.19`, a wide
+bootstrap interval, and a short leg that is difficult to implement in A-shares.
+Those are not footnotes; they are the point.
+
+Read the full run, assumptions, and limitations in
+[`docs/REFERENCE_RUN.md`](docs/REFERENCE_RUN.md) and
+[`docs/BENCHMARK_PROTOCOL.md`](docs/BENCHMARK_PROTOCOL.md).
+
+## Quickstart
+
+Requirements: Python 3.10+ and access to the configured A-share data source. The
+first run fetches data locally; it is never redistributed by this repository.
 
 ```bash
-git clone https://github.com/zdxslwywfccsqk/factorfoundry.git
-cd factorfoundry
+git clone https://github.com/zdxslwywfccsqk/FactorFoundry.git
+cd FactorFoundry
 python3 -m pip install -e .
-
-PYTHONPATH=src python3 -m alpha_foundry.agentic.cli run \
-  --config config.json \
-  --mode deterministic \
-  --factor-limit 12 \
-  --max-audits 4
+make agentic
 ```
 
-This runs the full artifact protocol without any model API call. It is the
-reference path for CI and offline reproduction.
+That command runs the complete artifact protocol without a model API call. It is
+the reference path for CI and offline reproduction.
 
-To explicitly evaluate the locked holdout after portfolio construction:
+To run the tests with development dependencies:
 
 ```bash
-PYTHONPATH=src python3 -m alpha_foundry.agentic.cli run \
-  --config config.json \
-  --mode deterministic \
-  --factor-limit 12 \
-  --max-audits 4 \
-  --release-holdout
+python3 -m pip install -e '.[dev]'
+make test
 ```
 
-The holdout release is recorded in `holdout_unlock.json` and the event ledger.
+To evaluate the locked holdout after a frozen portfolio is selected:
 
-## Quickstart: Mini-Agent mode
+```bash
+make agentic-holdout
+```
 
-Install the optional runtime:
+The release is recorded in `holdout_unlock.json` and the event ledger. Review the
+benchmark protocol before using the resulting number externally.
+
+<details>
+<summary><strong>Wire an LLM into the research loop</strong></summary>
+
+Install the optional Mini-Agent runtime:
 
 ```bash
 python3 -m pip install -e '.[mini-agent]'
-```
-
-For local development against a checkout of Mini-Agent:
-
-```bash
-export MINI_AGENT_ROOT=/path/to/Mini-Agent
-```
-
-Configure an API key through an environment variable rather than committing it:
-
-```bash
 export FACTORFOUNDRY_API_KEY='...'
 ```
 
-Enable the LLM in `config.json`:
-
-```json
-{
-  "llm": {
-    "enabled": true,
-    "provider": "openai",
-    "model": "gpt-4.1-mini",
-    "api_base": "https://api.openai.com/v1",
-    "api_key_env": "FACTORFOUNDRY_API_KEY"
-  }
-}
-```
-
-Then run:
+Enable the model in `config.json`, then run:
 
 ```bash
-PYTHONPATH=src python3 -m alpha_foundry.agentic.cli run \
-  --config config.json \
-  --mode mini-agent \
-  --factor-limit 8 \
-  --max-audits 4
+make agentic-mini
 ```
 
-If the model runtime or credentials are unavailable, the orchestrator can fall
-back to the deterministic path when `agentic.fallback_on_agent_failure` is true.
+The agent roles share the same deterministic tools, artifacts, split guard, and
+critic gates as the offline path. If the model runtime is unavailable, the
+orchestrator can fall back while recording that fallback in the manifest.
 
-## Run outputs
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the adapter boundary and
+[`SECURITY.md`](SECURITY.md) for the threat model.
 
-Each run creates a self-contained directory:
+</details>
 
-```text
-runs/<run_id>/
-  manifest.json          # run contract, config hash, data fingerprint, status
-  report.md              # human-readable evidence report
-  summary.json           # machine-readable summary
-  events.jsonl           # append-only event stream
-  ledger.sqlite          # artifacts + events
-  artifacts/             # one JSON file per artifact
-  agent_logs/            # Mini-Agent transcripts and logs, when enabled
-  holdout_unlock.json    # only if the holdout was explicitly released
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Agents["Bounded research agents"]
+        H["Hypothesis"] --> F["Feasibility"]
+        F --> E["Engineer"]
+        E --> V["Evaluator"]
+        V --> C["Critic"]
+        C --> P["Portfolio"]
+    end
+
+    Agents --> B["Typed artifact blackboard"]
+    B --> T["Deterministic tool layer"]
+    T --> D["Data"]
+    T --> L["DSL"]
+    T --> R["Cost-aware backtest"]
+    T --> S["FDR · DSR · PBO · audits"]
+    T -. "capability guard" .-> X[["Locked holdout"]]
 ```
 
-Useful commands:
+Agents never pass mutable Python objects into the numerical core. They submit
+artifacts. The orchestrator enforces legal transitions, and every tool call is
+recorded. The design separates:
 
-```bash
-PYTHONPATH=src python3 -m alpha_foundry.agentic.cli list --config config.json
-PYTHONPATH=src python3 -m alpha_foundry.agentic.cli inspect <run_id> --config config.json
-```
+- **generation and judgment** — agent roles;
+- **computation and acceptance** — deterministic tools and statistical gates;
+- **coordination** — a state machine over a shared blackboard;
+- **evidence** — append-only artifacts, events, and manifests.
 
-## Reference benchmark
+## Repository map
 
-The v0.2 deterministic runtime reproduces the original project result: a test net
-Sharpe of **0.7500** and annualized net return of **18.96%** for an
-`illiquidity_20` portfolio. The full run, command, and caveats are in
-[`docs/REFERENCE_RUN.md`](docs/REFERENCE_RUN.md). It is a reference benchmark,
-not a claim of robust alpha. The same run showed:
-
-- PBO around `0.51`;
-- Deflated Sharpe around `0.13`;
-- FDR q-value around `0.19`;
-- a wide bootstrap Sharpe interval;
-- a long-short portfolio whose short leg is difficult to implement in A-shares.
-
-The release protocol therefore treats the headline number as conditional
-evidence. See [`docs/BENCHMARK_PROTOCOL.md`](docs/BENCHMARK_PROTOCOL.md).
-
-## Validation protocol
-
-- Signal at close `t`; forward close-to-close return; implicit close execution.
-- Five-day horizon and five-day rebalance in the reference configuration.
-- Rank-weighted long-short by default; quantile mode is available.
-- Constant per-side cost in the reference run, with sensitivity tests required
-  before any external claim.
-- Train and validation are available to research agents. Test is locked.
-- Acceptance requires deterministic statistical gates plus future-data
-  perturbation and label-shuffle audits.
-- An LLM critic may add vetoes but cannot accept a factor that failed the gates.
-
-## Repository layout
+<details>
+<summary>Explore the code layout</summary>
 
 ```text
 src/alpha_foundry/
-  data.py                 # market-data panel construction
-  dsl.py                  # cross-sectional and time-series operators
-  factors.py              # economic template library
-  backtest.py             # cost-aware evaluation
-  stats.py                # FDR, DSR, PBO, leakage audits
-  portfolio.py            # signal combination
-  agentic/
-    schemas.py            # artifact and role contracts
-    artifacts.py          # append-only artifact store
-    ledger.py             # event ledger
-    splits.py             # holdout guard
-    session.py            # deterministic research services
-    tools.py              # scoped Mini-Agent tools
-    roles.py              # role prompts and tool boundaries
-    runtime.py            # Mini-Agent adapter
-    orchestrator.py       # state machine
-    report.py             # evidence report
-    cli.py                # command-line entry point
-  pipeline.py             # legacy fixed-sequence pipeline
-tests/                    # offline and adapter tests
-docs/                     # architecture, protocol, benchmark, release checklist
+  agentic/                 # state machine, roles, tools, blackboard, split guard
+  data.py                  # market-data panel construction
+  dsl.py                   # cross-sectional and time-series operators
+  factors.py               # economic factor template library
+  backtest.py              # cost-aware evaluation
+  stats.py                 # FDR, DSR, PBO, leakage audits
+  portfolio.py             # low-correlation signal combination
+  pipeline.py              # legacy fixed-sequence pipeline
+scripts/                   # data, diagnostics, tearsheets, brand assets
+tests/                     # offline, protocol, artifact, and adapter tests
+docs/                      # architecture, agent protocol, benchmark, launch kit
 ```
 
-## Tests
+</details>
 
-```bash
-PYTHONPATH=src python3 -m pytest -q
-```
-
-If a local Mini-Agent checkout is available:
-
-```bash
-PYTHONPATH=src:${MINI_AGENT_ROOT} \
-  python3 -m pytest -q tests/agentic/test_mini_agent_adapter.py
-```
-
-## Scope and non-goals
+## What this project does not claim
 
 - No market data is redistributed.
 - No live trading or broker integration.
-- No arbitrary agent-authored Python execution in the default runtime.
-- No claim that a single historical run proves durable alpha.
-- No free-for-all multi-agent chat; roles are bounded by tools and artifacts.
+- No arbitrary agent-authored shell or Python execution in the default runtime.
+- No free-for-all multi-agent chat room.
+- No claim that one historical run proves a durable, implementable alpha.
+- No claim that the reference long-short portfolio is directly executable in
+  A-shares.
 
-## Open-source notes
+## Roadmap
 
-- Code license: MIT.
-- Mini-Agent license and attribution: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
-- Contribution rules: [`CONTRIBUTING.md`](CONTRIBUTING.md).
-- Security model: [`SECURITY.md`](SECURITY.md).
-- Release checklist: [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
+The next public milestones are tracked in [`ROADMAP.md`](ROADMAP.md):
 
-If you use this project academically, see [`CITATION.cff`](CITATION.cff).
-Release history is in [`CHANGELOG.md`](CHANGELOG.md).
+- point-in-time universe construction and delisting-aware evaluation;
+- capacity, market-impact, and long-only implementation modes;
+- reproducible benchmark leaderboard across factor families;
+- controlled evaluation of LLM-generated hypotheses versus template search;
+- cross-market adapters and external benchmark submissions.
+
+## Contributing
+
+Contributions that improve scientific honesty or reproducibility are especially
+welcome:
+
+- add a benchmark run with a fixed config and data fingerprint;
+- propose an economic mechanism with a falsifiable prediction;
+- stress-test the cost, capacity, or survivorship assumptions;
+- add a regression test for a role boundary or split guard;
+- improve the evidence report or the Mini-Agent adapter.
+
+Start with [`CONTRIBUTING.md`](CONTRIBUTING.md), open a research proposal issue,
+or join an existing discussion. If this direction is useful to you, **star the
+repository and share the benchmark** — visibility is how a public, evidence-first
+quant project attracts more reviewers and better data.
+
+## Citation and license
+
+- Code: [MIT](LICENSE)
+- Citation metadata: [`CITATION.cff`](CITATION.cff)
+- Community standard: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+- Release history: [`CHANGELOG.md`](CHANGELOG.md)
+- Third-party notices: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- Launch kit: [`docs/LAUNCH_KIT.md`](docs/LAUNCH_KIT.md)
+
+If you use FactorFoundry in academic work, cite the repository and the exact run
+id, config hash, and data fingerprint behind any reported result.

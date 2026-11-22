@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alpha-foundry"
-version = "0.2.0"
-description = "Auditable multi-agent alpha factor research framework"
+version = "0.2.1"
+description = "Open-source multi-agent research lab for auditable alpha discovery"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{name = "FactorFoundry contributors"}]
-keywords = ["alpha-research", "multi-agent", "quantitative-finance", "a-share", "factor-model"]
+keywords = ["alpha-research", "multi-agent", "llm-agents", "quantitative-finance", "a-share", "factor-model"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Financial and Insurance Industry",
@@ -41,6 +41,7 @@ mini-agent = [
   "mini-agent @ git+https://github.com/MiniMax-AI/Mini-Agent.git@main",
 ]
 dev = [
+  "pillow>=10",
   "pytest>=8.0",
   "ruff>=0.6",
 ]
@@ -50,9 +51,9 @@ factorfoundry = "alpha_foundry.pipeline:main"
 factorfoundry-agent = "alpha_foundry.agentic.cli:main"
 
 [project.urls]
-Documentation = "https://github.com/zdxslwywfccsqk/factorfoundry/tree/main/docs"
-Repository = "https://github.com/zdxslwywfccsqk/factorfoundry"
-Issues = "https://github.com/zdxslwywfccsqk/factorfoundry/issues"
+Documentation = "https://github.com/zdxslwywfccsqk/FactorFoundry/tree/main/docs"
+Repository = "https://github.com/zdxslwywfccsqk/FactorFoundry"
+Issues = "https://github.com/zdxslwywfccsqk/FactorFoundry/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

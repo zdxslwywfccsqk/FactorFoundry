@@ -30,6 +30,17 @@ Please keep the following invariants:
 4. **No credentials or market data in commits.** Use environment variables and local data directories.
 5. **No arbitrary agent-authored shell execution** in the default distribution.
 
+## High-value contribution paths
+
+- add a point-in-time benchmark with a fixed config and data fingerprint;
+- stress-test transaction costs, capacity, borrow availability, or survivorship;
+- add a regression test for a role boundary, artifact invariant, or split guard;
+- propose a falsifiable economic mechanism through the research proposal issue;
+- improve the evidence report, reproducibility tooling, or Mini-Agent adapter.
+
+For public-facing claims, state the exact run id, config hash, and data fingerprint.
+Prefer reporting negative or ambiguous evidence over omitting failed trials.
+
 ## Adding a factor template
 
 Add the economic mechanism to `src/alpha_foundry/factors.py`, extend the formula

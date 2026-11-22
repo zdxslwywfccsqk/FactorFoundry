@@ -3,6 +3,16 @@
 All notable changes to FactorFoundry are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-11-22
+
+Open-source presentation and community launch refresh.
+
+- Rebuilt the README as a product-quality research showcase with visual identity.
+- Added a reproducible brand asset renderer, README hero, and social preview.
+- Added a Chinese project introduction and launch kit.
+- Added a public roadmap and clearer contribution paths.
+- Sharpened the positioning around auditable alpha discovery and negative evidence.
+
 ## [0.2.0] - 2026-11-22
 
 Initial open-source release candidate.

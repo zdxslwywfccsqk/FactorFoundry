@@ -73,8 +73,9 @@ class ResearchSession:
 
     @classmethod
     def from_config(cls, config: AppConfig, run_id: str, run_dir: Path) -> ResearchSession:
-        from ..pipeline import ensure_fields
+        from ..pipeline import ensure_fields, ensure_market_data
 
+        ensure_market_data(config)
         fields, metadata = ensure_fields(config)
         metadata = dict(metadata)
         metadata.setdefault("data_fingerprint", config.raw.get("data_fingerprint"))

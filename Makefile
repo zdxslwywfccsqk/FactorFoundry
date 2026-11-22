@@ -1,7 +1,7 @@
 PYTHON ?= python3
 export PYTHONPATH := src
 
-.PHONY: download build test run report diagnose agentic agentic-holdout agentic-mini all clean
+.PHONY: download build test run report diagnose agentic agentic-holdout agentic-mini brand all clean
 
 download:
 	$(PYTHON) -m alpha_foundry.pipeline --config config.json --stage download
@@ -26,6 +26,9 @@ agentic-holdout:
 
 agentic-mini:
 	$(PYTHON) -m alpha_foundry.agentic.cli run --config config.json --mode mini-agent --factor-limit 8 --max-audits 4
+
+brand:
+	$(PYTHON) scripts/render_brand_assets.py
 
 diagnose:
 	$(PYTHON) scripts/detailed_diagnostics.py

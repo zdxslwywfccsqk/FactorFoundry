@@ -32,3 +32,5 @@
 - [ ] Quickstart works on a clean machine.
 - [ ] Architecture, agent protocol, and benchmark protocol docs are current.
 - [ ] A minimal example run is committed as expected-output text, not binary market data.
+- [ ] README hero, Chinese README, and GitHub social preview render correctly.
+- [ ] GitHub About text and suggested topics are populated from the launch kit.

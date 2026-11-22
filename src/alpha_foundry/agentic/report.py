@@ -63,6 +63,7 @@ def write_agent_report(
     critic = critic_record.payload if critic_record else {}
     portfolio = portfolio_record.payload if portfolio_record else {}
     holdout = holdout_record.payload if holdout_record else {}
+    implementation = session.summary().get("implementability", {})
     decisions = {item["factor_id"]: item for item in critic.get("decisions", [])}
 
     lines: list[str] = []
@@ -164,6 +165,34 @@ def write_agent_report(
             lines.append(f"- Warnings: {'; '.join(portfolio['warnings'])}")
     else:
         lines.append("_No portfolio decision was recorded._")
+    lines.append("")
+
+    lines.append("## Implementability")
+    lines.append("")
+    long_only = implementation.get("long_only", {}) if isinstance(implementation, dict) else {}
+    capacity = implementation.get("capacity", {}) if isinstance(implementation, dict) else {}
+    if long_only:
+        lines.append("A separate long-only implementation is evaluated from the same signal.")
+        for split in ("validation", "test"):
+            item = long_only.get(split, {})
+            metrics = item.get("metrics", {}) if isinstance(item, dict) else {}
+            if metrics:
+                lines.append(
+                    f"- Long-only {split}: net Sharpe `{_fmt(metrics.get('net_sharpe'))}`, "
+                    f"annualized net return `{_fmt(metrics.get('net_ann_return'))}`, "
+                    f"annual turnover `{_fmt(metrics.get('turnover_annual'))}`, "
+                    f"max drawdown `{_fmt(metrics.get('max_drawdown'))}`."
+                )
+        if capacity.get("capacity_estimate"):
+            lines.append(
+                f"- Estimated 10% ADV capacity: median AUM `{capacity.get('estimated_aum_median'):,.0f}`, "
+                f"p10 AUM `{capacity.get('estimated_aum_p10'):,.0f}`."
+            )
+        lines.append(
+            "- Long-only returns retain market beta; this is an implementation check, not standalone alpha evidence."
+        )
+    else:
+        lines.append("_No long-only implementation result was recorded._")
     lines.append("")
 
     lines.append("## Holdout")

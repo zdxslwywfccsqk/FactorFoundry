@@ -970,6 +970,10 @@ class ResearchSession:
                 {"factor_id": best_candidate, "validation_net_sharpe": current_score}
             )
 
+        for factor_id in selected:
+            if factor_id not in self._audits:
+                self.audit(factor_id, producer=producer)
+
         weights = {factor_id: 1.0 / len(selected) for factor_id in selected}
         combined = combine_signals({factor_id: signals[factor_id] for factor_id in selected}, weights)
         self._portfolio_signal = combined

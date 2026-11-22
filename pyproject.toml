@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alpha-foundry"
-version = "0.2.1"
+version = "0.3.0"
 description = "Open-source multi-agent research lab for auditable alpha discovery"
 readme = "README.md"
 license = "MIT"

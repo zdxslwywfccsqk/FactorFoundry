@@ -814,6 +814,8 @@ def score_run(
         "holdout_net_ann_return": _as_float(
             _nested(summary, "holdout", "metrics", "net_ann_return")
         ),
+        "critic_accepted": _as_int(critic.get("n_accepted")),
+        "portfolio_fallback": bool(_nested(summary, "portfolio", "fallback", default=False)),
     }
     return Scorecard(
         run_id=str(manifest.get("run_id") or summary.get("run_id") or run_path.name),

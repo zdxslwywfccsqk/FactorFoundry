@@ -25,6 +25,7 @@ class RunWorkspace:
         self.artifacts_dir = self.run_dir / "artifacts"
         self.agent_logs_dir = self.run_dir / "agent_logs"
         self.manifest_path = self.run_dir / "manifest.json"
+        self.run_config_path = self.run_dir / "run_config.json"
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
         self.agent_logs_dir.mkdir(parents=True, exist_ok=True)
@@ -37,6 +38,10 @@ class RunWorkspace:
         data_fingerprint: str,
         repo_root: Path,
     ) -> RunManifest:
+        self.run_config_path.write_text(
+            json.dumps(raw_config, ensure_ascii=False, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
         manifest = RunManifest(
             run_id=self.run_id,
             project=project,

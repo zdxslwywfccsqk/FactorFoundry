@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Iterable
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,7 @@ from ..portfolio import combine_signals, signal_from_factor
 from ..stats import (
     audit_no_lookahead,
     bh_fdr,
+    bootstrap_sharpe_ci,
     deflated_sharpe,
     label_shuffle_test,
     probability_of_backtest_overfitting,
@@ -70,6 +72,8 @@ class ResearchSession:
         self._critic_review: CriticReview | None = None
         self._portfolio_signal: pd.DataFrame | None = None
         self._portfolio_id: str | None = None
+        self._implementation_runs: dict[str, dict[str, Any]] = {}
+        self._capacity_estimate: dict[str, float | bool] = {}
 
     @classmethod
     def from_config(cls, config: AppConfig, run_id: str, run_dir: Path) -> ResearchSession:
@@ -85,7 +89,9 @@ class ResearchSession:
     def fwd_ret(self) -> pd.DataFrame:
         if self._fwd_ret is None:
             self._fwd_ret = forward_returns(
-                self.fields["close"], self.config.backtest.horizon
+                self.fields["close"],
+                self.config.backtest.horizon,
+                self.config.backtest.execution_lag,
             )
         return self._fwd_ret
 
@@ -400,6 +406,10 @@ class ResearchSession:
             end=end,
             tradable=self.fields.get("tradable"),
         )
+        sharpe_interval = bootstrap_sharpe_ci(
+            result.returns, n_boot=500, seed=self.config.seed
+        )
+        result.metrics.update(sharpe_interval)
         self._evaluations[(factor_id, split_value.value)] = result
         warnings: list[str] = []
         coverage = float(result.metrics.get("coverage", 0.0) or 0.0)
@@ -419,8 +429,23 @@ class ResearchSession:
                 "portfolio_mode": self.config.backtest.portfolio_mode,
                 "quantile": self.config.backtest.quantile,
                 "min_names": self.config.backtest.min_names,
+                "execution_lag": self.config.backtest.execution_lag,
+                "execution_assumption": (
+                    "signal at close t; execute at close t+execution_lag; "
+                    "hold for horizon trading days"
+                ),
+                "label_boundary_guard": True,
+                "cost_model": "turnover_l1",
+                "cost_components": {
+                    "commission_bps": self.config.backtest.commission_bps,
+                    "stamp_duty_bps": self.config.backtest.stamp_duty_bps,
+                    "spread_bps": self.config.backtest.spread_bps,
+                    "impact_bps": self.config.backtest.impact_bps,
+                    "borrow_bps_annual": self.config.backtest.borrow_bps_annual,
+                },
+                "initial_position_charged": True,
+                "rebalance_charged": True,
                 "tradable_filter": "tradable" in self.fields,
-                "execution_assumption": "signal at close t; forward close-to-close return; implicit close execution",
             },
             warnings=warnings,
         )
@@ -442,6 +467,113 @@ class ResearchSession:
                 "net_sharpe": result.metrics.get("net_sharpe"),
                 "net_ann_return": result.metrics.get("net_ann_return"),
                 "coverage": coverage,
+            },
+            artifact_id=record.artifact_id,
+        )
+        return record, result
+
+    def _capacity_from_weights(
+        self,
+        weights: pd.DataFrame,
+        start: str,
+        end: str,
+        participation_rate: float = 0.10,
+    ) -> dict[str, float | bool]:
+        adv = self.fields.get("adv20")
+        if adv is None or weights.empty:
+            return {"capacity_estimate": False}
+        start_ts, end_ts = pd.Timestamp(start), pd.Timestamp(end)
+        adv_window = adv.loc[(adv.index >= start_ts) & (adv.index <= end_ts)]
+        estimates: list[float] = []
+        for dt in weights.index.intersection(adv_window.index):
+            row = weights.loc[dt]
+            active = row[row.abs() > 1e-12]
+            if active.empty:
+                continue
+            liquidity = adv_window.loc[dt].reindex(active.index)
+            capacity = liquidity.mul(participation_rate).div(active.abs()).replace(
+                [np.inf, -np.inf], np.nan
+            )
+            finite = capacity.to_numpy(dtype=float)
+            finite = finite[np.isfinite(finite) & (finite > 0)]
+            if finite.size:
+                estimates.append(float(np.min(finite)))
+        if not estimates:
+            return {"capacity_estimate": False}
+        values = np.asarray(estimates, dtype=float)
+        return {
+            "capacity_estimate": True,
+            "estimated_aum_median": float(np.median(values)),
+            "estimated_aum_p10": float(np.quantile(values, 0.10)),
+            "participation_rate": participation_rate,
+        }
+
+    def _run_implementation_backtest(
+        self,
+        signal: pd.DataFrame,
+        split: SplitName | str,
+        actor: str,
+        purpose: str,
+        parents: list[str] | None = None,
+        portfolio_id: str = "portfolio_long_only",
+    ) -> tuple[ArtifactRecord, BacktestResult] | None:
+        split_value = self.guard.assert_allowed(split, actor=actor, purpose=purpose)
+        start, end = self.guard.dates(split_value)
+        implementation_config = replace(self.config.backtest, portfolio_mode="long_only")
+        result = evaluate_factor(
+            signal,
+            self.fwd_ret,
+            implementation_config,
+            start=start,
+            end=end,
+            tradable=self.fields.get("tradable"),
+        )
+        result.metrics.update(
+            bootstrap_sharpe_ci(result.returns, n_boot=500, seed=self.config.seed)
+        )
+        capacity = self._capacity_from_weights(result.weights, start, end)
+        if capacity.get("capacity_estimate"):
+            self._capacity_estimate = capacity
+        self._implementation_runs[split_value.value] = {
+            "portfolio_id": portfolio_id,
+            "portfolio_mode": "long_only",
+            "metrics": to_jsonable(result.metrics),
+            "capacity": to_jsonable(capacity),
+        }
+        report = BacktestReport(
+            factor_id=portfolio_id,
+            split=split_value,
+            metrics=to_jsonable(result.metrics),
+            cost_bps_per_side=float(self.config.backtest.cost_bps_per_side),
+            protocol={
+                "start": start,
+                "end": end,
+                "horizon": self.config.backtest.horizon,
+                "portfolio_mode": "long_only",
+                "execution_lag": self.config.backtest.execution_lag,
+                "implementation_mode": "long_only",
+                "tradable_filter": "tradable" in self.fields,
+            },
+            warnings=[],
+        )
+        record = self.store.put(
+            ArtifactKind.BACKTEST_REPORT,
+            report.model_dump(mode="json"),
+            producer=actor,
+            status=ArtifactStatus.COMPLETED,
+            parents=parents or [],
+            split=split_value,
+            metadata={"factor_id": portfolio_id, "purpose": purpose},
+        )
+        self.ledger.append(
+            "implementation_backtest_completed",
+            actor,
+            {
+                "portfolio_id": portfolio_id,
+                "split": split_value.value,
+                "portfolio_mode": "long_only",
+                "net_sharpe": result.metrics.get("net_sharpe"),
+                "net_ann_return": result.metrics.get("net_ann_return"),
             },
             artifact_id=record.artifact_id,
         )
@@ -505,6 +637,7 @@ class ResearchSession:
             start=self.config.splits.validation_start,
             end=self.config.splits.validation_end,
             config=self.config.backtest,
+            tradable=self.fields.get("tradable"),
             seed=self.config.seed,
         )
         reasons: list[str] = []
@@ -849,6 +982,13 @@ class ResearchSession:
             purpose="portfolio validation",
             parents=[record.artifact_id for record in self.store.list(ArtifactKind.FACTOR_IMPLEMENTATION, ArtifactStatus.ACCEPTED)],
         )
+        self._run_implementation_backtest(
+            combined,
+            SplitName.VALIDATION,
+            actor=producer,
+            purpose="long-only validation",
+            parents=[validation_record.artifact_id],
+        )
         decision = PortfolioDecision(
             portfolio_id="portfolio_main",
             selected_factors=selected,
@@ -896,6 +1036,13 @@ class ResearchSession:
             purpose=reason,
             parents=[record.artifact_id for record in self.store.list(ArtifactKind.PORTFOLIO_DECISION)],
         )
+        self._run_implementation_backtest(
+            self._portfolio_signal,
+            SplitName.TEST,
+            actor=producer,
+            purpose=f"long-only holdout: {reason}",
+            parents=[record.artifact_id for record in self.store.list(ArtifactKind.PORTFOLIO_DECISION)],
+        )
         report = HoldoutReport(
             portfolio_id=self._portfolio_id,
             metrics=to_jsonable(result.metrics),
@@ -903,8 +1050,9 @@ class ResearchSession:
             reason=reason,
             limitations=[
                 "The test period may have been observed during earlier project iterations; treat this as a benchmark, not a pristine prospective holdout.",
-                "A-share shorting constraints and borrow availability are not fully modelled.",
-                "Costs use a constant per-side assumption; capacity and market impact require separate stress tests.",
+                "The research portfolio remains long-short; a separate long-only implementation is reported for deployability checks but is not the selected research portfolio.",
+                "Borrow availability and recall risk are not fully modelled for the research short leg.",
+                "Costs include commission, stamp duty, spread, and impact assumptions; capacity is estimated from ADV and requires separate stress testing.",
                 "The current universe still depends on a public data source and may contain survivorship or point-in-time limitations.",
             ],
         )
@@ -927,6 +1075,54 @@ class ResearchSession:
         )
         return record
 
+    def _scorecard_evidence(self) -> dict[str, Any]:
+        cost_components = ["commission", "stamp_duty", "spread", "impact"]
+        if (
+            self.config.backtest.commission_bps
+            + self.config.backtest.stamp_duty_bps
+            + self.config.backtest.spread_bps
+            + self.config.backtest.impact_bps
+            <= 0
+        ):
+            cost_components = ["all_in"]
+        long_only_available = bool(self._implementation_runs)
+        return {
+            "leakage": {
+                "label_boundary_guard": True,
+                "no_lookahead_full_prefix": True,
+                "label_shuffle_same_universe": True,
+                "pit_universe": bool(self.metadata.get("pit_universe", False)),
+            },
+            "data": {
+                "delisting_control": bool(self.metadata.get("delisting_control", False)),
+                "t_plus_one": False,
+                "limit_control": False,
+                "st_control": False,
+                "suspension_control": False,
+                "selection_missing_window": self.metadata.get("missing_ratio_window")
+                == "selection_end_date",
+            },
+            "execution": {
+                "execution_lag_bars": int(self.config.backtest.execution_lag),
+                "trade_price": "next_close",
+                "implementability": "long_only"
+                if long_only_available
+                else "research_long_short",
+                "borrow_cost_bps": 0.0,
+                "capacity_estimate": bool(self._capacity_estimate.get("capacity_estimate", False)),
+            },
+            "cost": {
+                "mode": "turnover_l1",
+                "initial_position_charged": True,
+                "rebalance_charged": True,
+                "components": cost_components,
+            },
+            "statistics": {
+                "holdout_pristine": False,
+            },
+            "robustness": {},
+        }
+
     def summary(self) -> dict[str, Any]:
         hypotheses = self.store.list(ArtifactKind.HYPOTHESIS_CARD)
         implementations = self.store.list(ArtifactKind.FACTOR_IMPLEMENTATION)
@@ -946,6 +1142,11 @@ class ResearchSession:
             "critic": critic.payload if critic else None,
             "portfolio": portfolio.payload if portfolio else None,
             "holdout": holdout.payload if holdout else None,
+            "implementability": {
+                "long_only": self._implementation_runs,
+                "capacity": self._capacity_estimate,
+            },
+            "scorecard_evidence": to_jsonable(self._scorecard_evidence()),
             "artifact_count": self.store.count(),
             "holdout_released": self.guard.holdout_released,
         }

@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import kurtosis, norm, skew
 
+from .backtest import eligible_signal_dates
 from .config import BacktestConfig
 from .factors import FactorSpec, compute_factor
 
@@ -147,17 +148,21 @@ def audit_no_lookahead(
     perturbed = compute_factor(spec, perturbed_fields)
     if cutoff not in original.index or cutoff not in perturbed.index:
         return {"passed": False, "max_abs_diff": np.nan, "n_compared": 0}
-    left = original.loc[cutoff]
-    right = perturbed.loc[cutoff]
-    both = pd.concat([left.rename("left"), right.rename("right")], axis=1).dropna()
-    if both.empty:
+    left = original.loc[:cutoff]
+    right = perturbed.loc[:cutoff]
+    left, right = left.align(right, join="inner")
+    diff = (left - right).abs()
+    values = diff.to_numpy(dtype=float)
+    finite = values[np.isfinite(values)]
+    if finite.size == 0:
         return {"passed": False, "max_abs_diff": np.nan, "n_compared": 0}
-    diff = (both["left"] - both["right"]).abs()
-    max_diff = float(diff.max())
+    max_diff = float(np.max(finite))
     return {
         "passed": bool(max_diff < 1e-10),
         "max_abs_diff": max_diff,
-        "n_compared": int(len(both)),
+        "n_compared": int(finite.size),
+        "scope": "full_prefix",
+        "cutoff": str(cutoff.date()),
     }
 
 
@@ -168,19 +173,29 @@ def label_shuffle_test(
     start: str | pd.Timestamp,
     end: str | pd.Timestamp,
     config: BacktestConfig,
+    tradable: pd.DataFrame | None = None,
     n_shuffles: int = 30,
     seed: int = 42,
 ) -> dict[str, float | bool | int]:
     factor = compute_factor(spec, fields)
     start, end = pd.Timestamp(start), pd.Timestamp(end)
-    dates = factor.index[(factor.index >= start) & (factor.index <= end)][:: config.horizon]
+    dates = eligible_signal_dates(
+        factor.index,
+        start=start,
+        end=end,
+        horizon=config.horizon,
+        execution_lag=config.execution_lag,
+    )
     rng = np.random.default_rng(seed)
     original_ics: list[float] = []
     shuffled_means: list[float] = []
     aligned: list[tuple[np.ndarray, np.ndarray]] = []
     for dt in dates:
+        x = factor.loc[dt].copy()
+        if tradable is not None and dt in tradable.index:
+            x = x.where(tradable.loc[dt] > 0)
         pair = pd.concat(
-            [factor.loc[dt].rename("factor"), fwd_ret.loc[dt].rename("forward")], axis=1
+            [x.rename("factor"), fwd_ret.loc[dt].rename("forward")], axis=1
         ).dropna()
         if len(pair) < config.min_names or pair["factor"].nunique() < 2:
             continue
@@ -203,4 +218,7 @@ def label_shuffle_test(
         "p_value": p_value,
         "passed": bool(original_mean > shuffled_mean and p_value < 0.10),
         "n_shuffles": int(n_shuffles),
+        "n_periods": int(len(aligned)),
+        "execution_lag": int(config.execution_lag),
+        "same_universe": bool(tradable is not None),
     }

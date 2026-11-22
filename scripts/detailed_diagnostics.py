@@ -145,7 +145,7 @@ def main() -> None:
     tradable = fields["tradable"]
     horizon = config.backtest.horizon
     periods = 252.0 / horizon
-    fwd_ret = forward_returns(close, horizon)
+    fwd_ret = forward_returns(close, horizon, config.backtest.execution_lag)
 
     validation_returns = {}
     trial_sharpes = []

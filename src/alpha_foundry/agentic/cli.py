@@ -6,6 +6,7 @@ import logging
 import sys
 
 from ..config import AppConfig
+from ..scorecard import score_run
 from .orchestrator import ResearchOrchestrator
 
 
@@ -94,6 +95,26 @@ def _inspect(args: argparse.Namespace) -> int:
     return 0
 
 
+def _score(args: argparse.Namespace) -> int:
+    config = AppConfig.load(args.config)
+    run_dir = config.paths.runs_dir / args.run_id
+    if not (run_dir / "summary.json").exists():
+        print(f"Missing summary for run: {args.run_id}", file=sys.stderr)
+        return 2
+    scorecard = score_run(run_dir)
+    rendered = json.dumps(scorecard.to_dict(), ensure_ascii=False, indent=2)
+    if args.format == "markdown":
+        rendered = scorecard.to_markdown()
+    if args.output:
+        output_path = config.root / args.output
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(rendered + "\n", encoding="utf-8")
+        print(f"Scorecard written to {output_path}")
+    else:
+        print(rendered)
+    return 0
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="FactorFoundry agentic research runtime"
@@ -127,6 +148,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     inspect_parser.add_argument("--config", default=argparse.SUPPRESS, help="Path to config.json")
     inspect_parser.add_argument("run_id")
     inspect_parser.set_defaults(func=_inspect)
+
+    score_parser = subparsers.add_parser(
+        "score", help="Score a run against the Alpha Evidence Scorecard"
+    )
+    score_parser.add_argument("--config", default=argparse.SUPPRESS, help="Path to config.json")
+    score_parser.add_argument("run_id")
+    score_parser.add_argument(
+        "--format",
+        choices=["markdown", "json"],
+        default="markdown",
+        help="Output format",
+    )
+    score_parser.add_argument(
+        "--output",
+        default=None,
+        help="Optional output path, relative to the repository root",
+    )
+    score_parser.set_defaults(func=_score)
     return parser.parse_args(argv)
 
 

@@ -33,7 +33,13 @@
     "horizon": 5,
     "portfolio_mode": "rank",
     "quantile": 0.1,
+    "execution_lag": 1,
     "cost_bps_per_side": 10.0,
+    "commission_bps": 2.5,
+    "stamp_duty_bps": 5.0,
+    "spread_bps": 2.0,
+    "impact_bps": 2.0,
+    "borrow_bps_annual": 0.0,
     "min_names": 20
   },
   "critic": {

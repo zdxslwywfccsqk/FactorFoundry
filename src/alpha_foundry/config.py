@@ -44,7 +44,13 @@ class BacktestConfig:
     horizon: int = 5
     portfolio_mode: str = "rank"
     quantile: float = 0.10
+    execution_lag: int = 1
     cost_bps_per_side: float = 10.0
+    commission_bps: float = 2.5
+    stamp_duty_bps: float = 5.0
+    spread_bps: float = 2.0
+    impact_bps: float = 2.0
+    borrow_bps_annual: float = 0.0
     min_names: int = 20
 
 

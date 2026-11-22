@@ -41,7 +41,7 @@ def select_universe(
     history = close.loc[selection_slice].notna().sum()
     avg_dollar = dollar_volume.loc[selection_slice].mean()
     median_price = close.loc[selection_slice].median()
-    missing_ratio = close.isna().mean()
+    missing_ratio = close.loc[selection_slice].isna().mean()
 
     mask = (
         (history >= config.data.min_history_days)
@@ -63,6 +63,9 @@ def select_universe(
         "strict_filter_count": int(mask.sum()),
         "median_history_days": float(history.median()),
         "median_avg_dollar_volume": float(avg_dollar.median()),
+        "missing_ratio_window": "selection_end_date",
+        "pit_universe": False,
+        "delisting_control": False,
     }
     return selected, metadata
 

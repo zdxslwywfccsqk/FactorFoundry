@@ -21,7 +21,7 @@ from scipy.stats import kurtosis, norm, skew
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from alpha_foundry.backtest import evaluate_factor, forward_returns
+from alpha_foundry.backtest import eligible_signal_dates, evaluate_factor, forward_returns
 from alpha_foundry.config import AppConfig
 from alpha_foundry.data import load_fields
 from alpha_foundry.factors import compute_factor, generate_factor_specs
@@ -133,9 +133,16 @@ def mean_ic_at_horizon(
     end: str,
     horizon: int,
     step: int,
+    execution_lag: int,
 ) -> tuple[float, int]:
-    fwd = forward_returns(close, horizon)
-    dates = close.index[(close.index >= pd.Timestamp(start)) & (close.index <= pd.Timestamp(end))][::step]
+    fwd = forward_returns(close, horizon, execution_lag)
+    dates = eligible_signal_dates(
+        close.index,
+        start=start,
+        end=end,
+        horizon=step,
+        execution_lag=execution_lag,
+    )
     ics = []
     for dt in dates:
         x = factor.loc[dt].where(tradable.loc[dt] > 0)
@@ -202,7 +209,7 @@ def main() -> None:
     close = fields["close"]
     tradable = fields["tradable"]
     horizon = config.backtest.horizon
-    fwd_ret = forward_returns(close, horizon)
+    fwd_ret = forward_returns(close, horizon, config.backtest.execution_lag)
 
     specs = {spec.spec_id: spec for spec in generate_factor_specs()}
     spec = specs[FACTOR_ID]
@@ -251,7 +258,16 @@ def main() -> None:
     ):
         start, end = ranges[key]
         ic_decay[split_name] = {
-            h: mean_ic_at_horizon(factor, close, tradable, start, end, h, horizon)[0]
+            h: mean_ic_at_horizon(
+                factor,
+                close,
+                tradable,
+                start,
+                end,
+                h,
+                horizon,
+                config.backtest.execution_lag,
+            )[0]
             for h in (1, 3, 5, 10, 20)
         }
 

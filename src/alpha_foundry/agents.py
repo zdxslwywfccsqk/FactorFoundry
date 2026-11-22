@@ -186,7 +186,9 @@ class BacktestAgent(BaseAgent):
     def run(self, context: AgentContext) -> None:
         close = context.fields["close"]
         horizon = context.config.backtest.horizon
-        context.fwd_ret = forward_returns(close, horizon)
+        context.fwd_ret = forward_returns(
+            close, horizon, context.config.backtest.execution_lag
+        )
         tradable = context.fields.get("tradable")
         splits = context.config.splits
         for idx, spec in enumerate(context.specs, start=1):

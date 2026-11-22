@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alpha-foundry"
+version = "0.2.0"
+description = "Auditable multi-agent alpha factor research framework"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{name = "FactorFoundry contributors"}]
+keywords = ["alpha-research", "multi-agent", "quantitative-finance", "a-share", "factor-model"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Financial and Insurance Industry",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Office/Business :: Financial :: Investment",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "numpy",
+  "pandas",
+  "pyarrow",
+  "scipy",
+  "requests",
+  "matplotlib",
+  "duckdb",
+  "baostock",
+  "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+mini-agent = [
+  "mini-agent @ git+https://github.com/MiniMax-AI/Mini-Agent.git@main",
+]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.6",
+]
+
+[project.scripts]
+factorfoundry = "alpha_foundry.pipeline:main"
+factorfoundry-agent = "alpha_foundry.agentic.cli:main"
+
+[project.urls]
+Documentation = "https://github.com/zdxslwywfccsqk/factorfoundry/tree/main/docs"
+Repository = "https://github.com/zdxslwywfccsqk/factorfoundry"
+Issues = "https://github.com/zdxslwywfccsqk/factorfoundry/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E402"]

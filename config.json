@@ -1,0 +1,70 @@
+{
+  "project": {
+    "name": "FactorFoundry",
+    "seed": 42
+  },
+  "paths": {
+    "raw_dir": "data/raw",
+    "processed_dir": "data/processed",
+    "experiments_dir": "experiments",
+    "output_dir": "output",
+    "runs_dir": "runs"
+  },
+  "data": {
+    "start_date": "2019-01-01",
+    "end_date": "2026-09-30",
+    "universe_size": 200,
+    "index_symbol": "sh000300",
+    "selection_end_date": "2020-12-31",
+    "min_history_days": 180,
+    "min_avg_dollar_volume": 20000000.0,
+    "min_price": 1.0,
+    "max_missing_ratio": 0.25
+  },
+  "splits": {
+    "train_start": "2019-07-01",
+    "train_end": "2021-12-31",
+    "validation_start": "2022-01-01",
+    "validation_end": "2024-12-31",
+    "test_start": "2025-01-01",
+    "test_end": "2026-09-30"
+  },
+  "backtest": {
+    "horizon": 5,
+    "portfolio_mode": "rank",
+    "quantile": 0.1,
+    "cost_bps_per_side": 10.0,
+    "min_names": 20
+  },
+  "critic": {
+    "min_coverage": 0.65,
+    "min_validation_ic": 0.005,
+    "min_validation_icir": 0.10,
+    "min_validation_net_sharpe": 0.10,
+    "max_turnover_annual": 35.0,
+    "max_fdr_q": 0.20,
+    "max_pairwise_corr": 0.80,
+    "min_subperiod_sign_ratio": 0.66
+  },
+  "portfolio": {
+    "max_factors": 5,
+    "max_pairwise_corr": 0.65,
+    "weighting": "equal"
+  },
+  "llm": {
+    "enabled": false,
+    "provider": "openai",
+    "model": "gpt-4.1-mini",
+    "api_base": "https://api.openai.com/v1",
+    "api_key_env": "FACTORFOUNDRY_API_KEY",
+    "max_steps": 30,
+    "token_limit": 80000
+  },
+  "agentic": {
+    "default_mode": "deterministic",
+    "factor_limit": 20,
+    "max_audits": 12,
+    "allow_holdout": false,
+    "fallback_on_agent_failure": true
+  }
+}

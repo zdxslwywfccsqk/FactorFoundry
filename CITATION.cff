@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use FactorFoundry in academic work, please cite this repository."
+title: "FactorFoundry: auditable multi-agent alpha factor research"
+type: software
+authors:
+  - name: "FactorFoundry contributors"
+repository-code: "https://github.com/zdxslwywfccsqk/factorfoundry"
+license: MIT
+version: "0.2.0"
+date-released: "2026-11-22"
+abstract: >-
+  FactorFoundry converts economically motivated hypotheses into reproducible,
+  leakage-audited factor experiments for A-share equities. Language-model agents
+  propose and critique; deterministic tools evaluate, audit, and construct portfolios.

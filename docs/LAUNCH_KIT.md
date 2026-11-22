@@ -27,7 +27,7 @@ python3 scripts/render_brand_assets.py
 
 **Pinned repository links**
 
-- release: `v0.2.1`
+- release: `v0.3.0`
 - benchmark: `docs/REFERENCE_RUN.md`
 - architecture: `docs/ARCHITECTURE.md`
 - contribution guide: `CONTRIBUTING.md`
@@ -59,10 +59,12 @@ It is an open-source multi-agent research lab for A-share alpha discovery:
 - rejected factors and failed trials remain in the evidence chain;
 - FDR, DSR, PBO, and leakage audits are part of acceptance.
 
-The reference run reaches 0.75 net Sharpe and 18.96% annualized net return on the
-holdout. We also publish the uncomfortable part: PBO 0.51, DSR 0.13, FDR q 0.19,
-and A-share short-sale limitations. The point is not to market a number. The
-point is to make the evidence inspectable.
+The v0.3 reference run reports 0.7567 net Sharpe and 20.46% annualized net return on
+the holdout. It also receives only 46/100 on our Alpha Evidence Scorecard and the
+certification **Benchmark only**. None of the 73 candidates passed every critic gate,
+so the portfolio is an explicit fallback. PBO is 0.56, DSR is 0.25, FDR q is 0.33,
+and the holdout Sharpe interval is [-0.09, 0.32]. The point is not to market a number.
+The point is to make the evidence inspectable.
 
 GitHub: https://github.com/zdxslwywfccsqk/FactorFoundry
 
@@ -91,9 +93,11 @@ GitHub: https://github.com/zdxslwywfccsqk/FactorFoundry
 - 被拒绝的因子和失败试验也会进入证据链；
 - FDR、DSR、PBO、未来数据扰动和标签打乱是验收的一部分。
 
-参考运行在 Holdout 上得到 0.75 净 Sharpe、18.96% 年化净收益；同时公开 PBO
-0.51、DSR 0.13、FDR q 0.19 以及 A 股空头约束。我们不把单次历史结果包装成稳定
-Alpha，而是把完整证据链公开出来，接受审阅和证伪。
+v0.3 参考运行在 Holdout 上报告 0.7567 净 Sharpe、20.46% 年化净收益，但在
+Alpha Evidence Scorecard 上只有 46/100，认证等级为 **Benchmark only**。73 个
+候选中没有任何因子通过全部 Critic 门槛，页面中的组合是显式 fallback；PBO 为
+0.56、DSR 为 0.25、FDR q 为 0.33，Holdout Sharpe 的 95% 区间为 [-0.09, 0.32]。
+我们不把单次历史结果包装成稳定 Alpha，而是把完整证据链公开出来，接受审阅和证伪。
 
 GitHub：https://github.com/zdxslwywfccsqk/FactorFoundry
 
@@ -102,7 +106,7 @@ GitHub：https://github.com/zdxslwywfccsqk/FactorFoundry
 - 为什么 Agent 不应成为因子研究里的“数值真相来源”
 - 一个开源的多智能体 Alpha 研究协议：如何锁定 Holdout 并保留失败证据
 - 从 73 个候选到 1 个组合：一次可复现的 A 股因子搜索
-- 我们公开了 PBO 0.51 和 DSR 0.13，因为这比只展示 Sharpe 更重要
+- 我们公开了 PBO 0.56、DSR 0.25 和 46/100 的评分，因为这比只展示 Sharpe 更重要
 
 ## Claims to avoid
 

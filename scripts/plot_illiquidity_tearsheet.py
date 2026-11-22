@@ -208,6 +208,7 @@ def main() -> None:
     fields, _ = load_fields(config.paths.processed_dir)
     close = fields["close"]
     tradable = fields["tradable"]
+    n_symbols = int(close.shape[1])
     horizon = config.backtest.horizon
     fwd_ret = forward_returns(close, horizon, config.backtest.execution_lag)
 
@@ -325,16 +326,33 @@ def main() -> None:
     )
     ax_title.text(
         0.0,
-        0.53,
-        "Formula: -log(mean(dollar volume, 20))   |   Direction: +1   |   Universe: 155 A-shares   |   Rebalance: 5 trading days   |   Cost: 10 bps per side",
+        0.62,
+        f"Formula: -log(mean(dollar volume, 20))   |   Direction: +1   |   Universe: {n_symbols} filtered A-shares",
         fontsize=10,
         va="top",
         color="#4d5656",
     )
     ax_title.text(
         0.0,
-        0.25,
-        "Train: 2019-07-01 to 2021-12-31   |   Validation: 2022-01-01 to 2024-12-31   |   Test: 2025-01-01 to 2026-09-30",
+        0.42,
+        (
+            f"Signal: close t   |   Execute: close t+{config.backtest.execution_lag}   |   "
+            f"Hold: {horizon} trading days   |   Costs: commission {config.backtest.commission_bps:g} / "
+            f"sell stamp {config.backtest.stamp_duty_bps:g} / spread {config.backtest.spread_bps:g} / "
+            f"impact {config.backtest.impact_bps:g} bps"
+        ),
+        fontsize=10,
+        va="top",
+        color="#4d5656",
+    )
+    ax_title.text(
+        0.0,
+        0.22,
+        (
+            f"Train: {config.splits.train_start} to {config.splits.train_end}   |   "
+            f"Validation: {config.splits.validation_start} to {config.splits.validation_end}   |   "
+            f"Test: {config.splits.test_start} to {config.splits.test_end}"
+        ),
         fontsize=9,
         va="top",
         color="#4d5656",
@@ -614,7 +632,7 @@ def main() -> None:
     ax_turn.set_ylabel("Turnover per 5 days")
     ax_turn.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:.0f}%"))
     ax_turn2 = ax_turn.twinx()
-    cumulative_cost = (full.turnover * config.backtest.cost_bps_per_side / 10000.0).cumsum() * 100
+    cumulative_cost = (full.gross_returns - full.returns).fillna(0.0).cumsum() * 100
     ax_turn2.plot(cumulative_cost.index, cumulative_cost.values, color="#c0392b", linewidth=1.3, label="Cumulative cost")
     ax_turn2.set_ylabel("Cumulative cost", color="#c0392b")
     ax_turn2.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:.1f}%"))
@@ -887,7 +905,7 @@ def main() -> None:
     fig.text(
         0.01,
         0.002,
-        "Source: FactorFoundry processed A-share panel; metrics use 5-day non-overlapping periods and 10 bps per-side cost. Past performance is not a live track record.",
+        "Source: FactorFoundry processed A-share panel; metrics use non-overlapping periods, one-bar execution lag, and component-based full-L1 costs. Past performance is not a live track record.",
         fontsize=7,
         color="#7f8c8d",
     )

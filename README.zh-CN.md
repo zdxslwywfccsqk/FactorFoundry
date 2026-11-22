@@ -13,6 +13,7 @@
   <a href="README.md">English</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#参考运行">参考运行</a> ·
+  <a href="docs/SCORECARD.md">判分标准</a> ·
   <a href="#系统架构">系统架构</a> ·
   <a href="ROADMAP.md">路线图</a>
 </p>
@@ -66,16 +67,30 @@ Mini-Agent 提供单 Agent 执行循环；FactorFoundry 提供多 Agent 状态�
 
 ## 参考运行
 
-| Holdout 净 Sharpe | Holdout 年化净收益 | 候选因子 | Critic 接受 | 工件数 |
-|---:|---:|---:|---:|---:|
-| **0.7500** | **18.96%** | **73** | **2** | **374** |
+| 证据评分 | Holdout 净 Sharpe | Holdout 年化净收益 | 候选因子 | Critic 接受 | 工件数 |
+|---:|---:|---:|---:|---:|---:|
+| **46 / 100 · D** | **0.7567** | **20.46%** | **73** | **0** | **375** |
 
-**我们也公开会削弱这个标题结论的证据。** 同一次运行的 PBO 为 `0.51`，DSR 为
-`0.13`，FDR q 值为 `0.19`，Bootstrap 区间较宽，而且 A 股空头腿难以直接执行。
-这些不是脚注，而是项目想解决的真正问题。
+**我们也公开会削弱这个标题结论的证据。** 同一次运行的 PBO 为 `0.56`，DSR 为
+`0.25`，FDR q 值为 `0.33`，Holdout Sharpe 的 95% 区间为 `[-0.09, 0.32]`。
+没有任何因子通过全部 Critic 门槛，因此页面中的组合是显式的 fallback。它是
+benchmark，不是被接受的 Alpha。
 
 完整结果、限制与复现实验见
 [`docs/REFERENCE_RUN.md`](docs/REFERENCE_RUN.md)。
+
+### Alpha 如何判分
+
+FactorFoundry 不把 Sharpe 当成排行榜总分。每次运行都会经过
+[`Alpha Evidence Scorecard`](docs/SCORECARD.md)：7 个 fail-closed 硬门槛、
+100 分证据评分，以及独立的 `Alpha Candidate` 认证。收益再高，只要执行、成本、
+泄漏控制、DSR 或 PBO 不达标，就只能标记为 `Benchmark only`，不能称为 Alpha。
+
+```bash
+factorfoundry-agent score <run_id> --format markdown
+```
+
+回测框架审计见 [`docs/BACKTEST_AUDIT.md`](docs/BACKTEST_AUDIT.md)。
 
 ## 快速开始
 

@@ -21,6 +21,7 @@
   <a href="#quickstart">Quickstart</a> ·
   <a href="#why-factorfoundry">Why FactorFoundry</a> ·
   <a href="#reference-run">Reference run</a> ·
+  <a href="docs/SCORECARD.md">Scorecard</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="ROADMAP.md">Roadmap</a> ·
   <a href="README.zh-CN.md">简体中文</a>
@@ -97,20 +98,37 @@ runtime capability. The default command cannot evaluate it.
 
 ## Reference run
 
-The v0.2 deterministic runtime reproduces the original A-share research result:
+The v0.3 deterministic runtime is a hardened benchmark with execution delay, full
+traded-notional costs, split-boundary label guards, and a separate long-only result:
 
-| Holdout net Sharpe | Holdout net annual return | Candidates | Critic accepted | Artifacts |
-|---:|---:|---:|---:|---:|
-| **0.7500** | **18.96%** | **73** | **2** | **374** |
+| Evidence score | Holdout net Sharpe | Holdout net annual return | Candidates | Critic accepted | Artifacts |
+|---:|---:|---:|---:|---:|---:|
+| **46 / 100 · D** | **0.7567** | **20.46%** | **73** | **0** | **375** |
 
 **We publish the evidence that weakens our own headline.** The same run showed a
-PBO of `0.51`, a Deflated Sharpe of `0.13`, an FDR q-value of `0.19`, a wide
-bootstrap interval, and a short leg that is difficult to implement in A-shares.
-Those are not footnotes; they are the point.
+PBO of `0.56`, a Deflated Sharpe of `0.25`, an FDR q-value of `0.33`, and a
+holdout Sharpe interval of `[-0.09, 0.32]`. No factor passed every critic gate,
+so the reported portfolio is an explicit fallback. It is a benchmark, not an
+accepted alpha.
 
 Read the full run, assumptions, and limitations in
 [`docs/REFERENCE_RUN.md`](docs/REFERENCE_RUN.md) and
 [`docs/BENCHMARK_PROTOCOL.md`](docs/BENCHMARK_PROTOCOL.md).
+
+### How an alpha is graded
+
+FactorFoundry does not use Sharpe as a leaderboard score. Every run is evaluated by the
+[`Alpha Evidence Scorecard`](docs/SCORECARD.md): seven fail-closed hard gates, a
+100-point evidence score, and a separate `Alpha Candidate` certification. A run with a
+high headline return but weak execution, costs, leakage controls, DSR, or PBO is labeled
+`Benchmark only` rather than alpha.
+
+```bash
+factorfoundry-agent score <run_id> --format markdown
+```
+
+The framework audit behind this standard is documented in
+[`docs/BACKTEST_AUDIT.md`](docs/BACKTEST_AUDIT.md).
 
 ## Quickstart
 

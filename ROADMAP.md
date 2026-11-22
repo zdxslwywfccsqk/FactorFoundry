@@ -3,27 +3,31 @@
 FactorFoundry is being built as public infrastructure for auditable alpha
 research. The roadmap prioritizes evidence quality over feature count.
 
-## Now — v0.2.x
+## Now — v0.3.x
 
 - [x] deterministic reference runtime with no model API dependency;
 - [x] Mini-Agent role adapter with scoped tools;
 - [x] typed artifact blackboard, event ledger, and run manifest;
 - [x] train/validation/test capability guard;
-- [x] cost-aware backtest, FDR, DSR, PBO, and leakage audits;
-- [x] reproducible A-share reference benchmark with explicit caveats;
+- [x] one-bar execution lag and split-boundary label guards;
+- [x] full-L1 cost accounting, initial deployment charging, and cost decomposition;
+- [x] long-only implementation check, capacity screening, and bootstrap Sharpe intervals;
+- [x] FDR, DSR, PBO, full-prefix future-data perturbation, and aligned label-shuffle audits;
+- [x] fail-closed Alpha Evidence Scorecard with an `Alpha Candidate` certification;
+- [x] reproducible A-share reference benchmark with an explicit `Benchmark only` verdict;
+- [ ] cost-sensitivity and parameter-perturbation reports;
 - [ ] publish the launch kit, social preview, and first community review;
 - [ ] add a one-command synthetic-data demo for contributors without market data.
 
-## v0.3 — Evidence hardening
+## v0.4 — Point-in-time evidence
 
 - [ ] point-in-time universe construction;
 - [ ] delisting-aware and survivorship-controlled evaluation;
-- [ ] long-only and short-constrained implementation modes;
-- [ ] capacity, market-impact, and borrow-cost models;
-- [ ] cost-sensitivity and parameter-perturbation reports;
+- [ ] short-constrained implementation with borrow recall and squeeze controls;
+- [ ] market-impact calibration and capacity stress testing;
 - [ ] benchmark runs exportable without private market data.
 
-## v0.4 — Agent research quality
+## v0.5 — Agent research quality
 
 - [ ] controlled comparison: template hypotheses vs. LLM hypotheses;
 - [ ] single-agent vs. multi-agent ablations with fixed budget;
@@ -31,7 +35,7 @@ research. The roadmap prioritizes evidence quality over feature count.
 - [ ] structured debate or feedback between Critic and Hypothesis roles;
 - [ ] provider-neutral model adapter and cost accounting.
 
-## v0.5 — Community benchmark
+## v0.6 — Community benchmark
 
 - [ ] leaderboard with fixed data fingerprints and evaluation protocol;
 - [ ] external benchmark submission template;
